@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Embedded Markdown Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- 埋め込み前提なので余計な余白・背景を排除 -->
+  <style>
+    :root {
+      --bg: transparent;
+      --fg: #222;
+      --link: #0969da;
+      --code-bg: #f6f8fa;
+      --border: #d0d7de;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                   "Segoe UI", "Hiragino Sans", "Noto Sans JP",
+                   "Yu Gothic UI", sans-serif;
+      line-height: 1.6;
+    }
+
+    #container {
+      padding: 12px;
+      box-sizing: border-box;
+    }
+
+    /* Markdown basic styling */
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+      margin-bottom: 0.6em;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.2em;
+    }
+
+    p {
+      margin: 0.6em 0;
+    }
+
+    a {
+      color: var(--link);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    pre {
+      background: var(--code-bg);
+      padding: 12px;
+      overflow-x: auto;
+      border-radius: 6px;
+    }
+
+    code {
+      background: var(--code-bg);
+      padding: 0.15em 0.35em;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.95em;
+    }
+
+    pre code {
+      padding: 0;
+      background: none;
+    }
+
+    blockquote {
+      margin: 0.8em 0;
+      padding-left: 1em;
+      border-left: 4px solid var(--border);
+      color: #555;
+    }
+
+    table {
+      border-collapse: collapse;
+      margin: 1em 0;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+    }
+
+    ul, ol {
+      padding-left: 1.6em;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+  </style>
+
+  <!-- Markdown parser (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div id="container"></div>
+
+  <script>
+    /*
+      埋め込み想定の仕様
+      - 親フレームから Markdown を渡す
+      - query (?md=) / postMessage / script内定義 の3方式に対応
+    */
+
+    const container = document.getElementById('container');
+
+    function renderMarkdown(md) {
+      container.innerHTML = marked.parse(md || '');
+    }
+
+    /* 1. query string (?md=...) */
+    const params = new URLSearchParams(location.search);
+    if (params.has('md')) {
+      try {
+        renderMarkdown(decodeURIComponent(params.get('md')));
+      } catch {
+        renderMarkdown(params.get('md'));
+      }
+    }
+
+    /* 2. postMessage で受信 */
+    window.addEventListener('message', (e) => {
+      if (typeof e.data === 'string') {
+        renderMarkdown(e.data);
+      } else if (e.data && e.data.markdown) {
+        renderMarkdown(e.data.markdown);
+      }
+    });
+
+    /* 3. 初期表示用（単体確認用） */
+    if (!container.innerHTML) {
+      renderMarkdown(`# Markdown Viewer\n\nこのページは **埋め込み前提** の静的Markdownレンダラです。\n\n- iframe 埋め込み対応\n- postMessage で動的更新可能\n- サーバー処理不要\n\n\`\`\`js\niframe.contentWindow.postMessage('# Hello', '*');\n\`\`\``);
+    }
+  </script>
+</body>
+</html>
